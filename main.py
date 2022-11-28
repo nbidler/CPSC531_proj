@@ -66,19 +66,26 @@ spark = SparkSession.builder.appName('oceanspark').getOrCreate()
 endTime = time.monotonic()
 print("spark session made, in ", (endTime - startTime), " s")
 
-# creating a dataframe from the data we grabbed from the csvs in step #2
-print("create dataframe")
-startTime = time.monotonic()
-dataframe = spark.createDataFrame(data[0:1000], columns)
-endTime = time.monotonic()
-print("dataframe created, in ", (endTime - startTime), " s")
+# count down from number A to (number B +1),
+#  rows to read (maxRows) from array "data" becomes larger with each loop
+#  ex. maxRows = rows in data / number ... rows / 3, rows / 2 , rows / 1, stop
+for number in range(4, 0, -1):
+    # create a max number of rows to read
+    maxRows = round(entries / number)
 
-# display dataframe
-#dataframe.show()
+    # creating a dataframe from the data we grabbed from the csvs in step #2
+    print("create dataframe")
+    startTime = time.monotonic()
+    dataframe = spark.createDataFrame(data[0:maxRows], columns)
+    endTime = time.monotonic()
+    print("dataframe created, in ", (endTime - startTime), " s")
 
-# TEST: find average of temperature column
-print("average dataframe")
-startTime = time.monotonic()
-dataframe.agg({'temperature': 'avg'}).show()
-endTime = time.monotonic()
-print("dataframe avg complete, in ", (endTime - startTime), " s")
+    # display dataframe
+    # dataframe.show()
+
+    # TEST: find average of temperature column
+    print("average dataframe")
+    startTime = time.monotonic()
+    dataframe.agg({'temperature': 'avg'}).show()
+    endTime = time.monotonic()
+    print("dataframe avg complete, in ", (endTime - startTime), " s")
