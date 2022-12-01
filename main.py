@@ -100,7 +100,7 @@ dataPortion = 4
 timeMeasures = []
 
 for number in range(dataPortion, 0, -1):
-    print("this dataframe contains ", number, "/", dataPortion, " of the total data")
+    print("this dataframe contains 1/", number, " of the total data")
     # create a max number of rows to read
     maxRows = round(entries / number)
 
@@ -110,7 +110,7 @@ for number in range(dataPortion, 0, -1):
     dataframe = spark.createDataFrame(data[0:maxRows], columns)
     endTime = time.monotonic()
     wholeDFtime = endTime - startTime
-    print("whole dataframe created, in ", wholeDFtime, " s")
+    #print("whole dataframe created, in ", wholeDFtime, " s")
     numPartitions = dataframe.rdd.getNumPartitions()
     #print("Maximum partitions ", numPartitions)
 
@@ -125,6 +125,7 @@ for number in range(dataPortion, 0, -1):
         reducedDF = dataframe.coalesce(activePartitions)
         endTime = time.monotonic()
         reducePartDFtime = endTime - startTime
+        print("this dataframe contains ", activePartitions, " active Partitions")
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
         #print("average dataframe with ", activePartitions, " partitions")
