@@ -1,7 +1,3 @@
-https://sccoos.org/thredds/dodsC/autoss/005_newport_pier-2017.nc
-https://sccoos.org/thredds/dodsC/autoss/005_newport_pier-2018.nc
-https://sccoos.org/thredds/dodsC/autoss/005_newport_pier-2019.nc
-https://sccoos.org/thredds/dodsC/autoss/005_newport_pier-2020.nc
 https://sccoos.org/thredds/dodsC/autoss/newport_pier-2005.nc
 https://sccoos.org/thredds/dodsC/autoss/newport_pier-2006.nc
 https://sccoos.org/thredds/dodsC/autoss/newport_pier-2007.nc

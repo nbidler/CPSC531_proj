@@ -29,6 +29,7 @@ print(databaseFilenames)
 import csv
 
 # the too-large array to hold all data
+# store all ocean algae data into a list here
 data = []
 
 for filename in databaseFilenames:
@@ -43,21 +44,20 @@ for filename in databaseFilenames:
         # store column names into a list here
         columns = next(reader)
 
-        # store all ocean algae data into a list here
-        #data = []
-
+        # store data from file into list, which pySpark can read
         for row in reader:
             data.append(row[:])
     # end of reading input file
     endTime = time.monotonic()
     newLen = len(data)
-    #print("headers from ", filename)
-    #print(columns)
     print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
     # for purposes of testing, keep the "maximum" size small
-    if len(data) > 100000:
+    if len(data) > 10000:
         break
+
+# if not printing whole contents of array "data" use this line to show output.csv has finished being read
+print("finished reading .csv files")
 
 if True:
     # make note of number of rows in array "data": rows = # of measurements -1 (for headers
@@ -71,8 +71,7 @@ if True:
     # show contents of columns
     #print("headers:", columns)
 
-    # if not printing whole contents of array "data" use this line to show output.csv has finished being read
-    print("finished reading output.csv")
+
 
     # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
     # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
@@ -90,10 +89,18 @@ if True:
     endTime = time.monotonic()
     print("spark session made, in ", (endTime - startTime), " s")
 
+    # Step #4 - create and act on the dataframe repeatedly,
+    #   each time using a larger portion of the dataset up to the dataset's actual size
     # count down from number A to (number B +1),
     #  rows to read (maxRows) from array "data" becomes larger with each loop
     #  ex. maxRows = rows in data / number ... rows / 3, rows / 2 , rows / 1, stop
-    for number in range(4, 0, -1):
+    
+    # change this variable to change the size otaf the dataset being used
+    # ex. da
+    dataPortion = 4
+
+    for number in range(dataPortion, 0, -1):
+        print("this dataframe contains ", number, "/", dataPortion, " of the total data")
         # create a max number of rows to read
         maxRows = round(entries / number)
 
@@ -103,14 +110,20 @@ if True:
         dataframe = spark.createDataFrame(data[0:maxRows], columns)
         endTime = time.monotonic()
         print("dataframe created, in ", (endTime - startTime), " s")
-        print("partitions ", dataframe.rdd.getNumPartitions())
+        numPartitions = dataframe.rdd.getNumPartitions()
+        print("Maximum partitions ", numPartitions)
 
         # display dataframe
         # dataframe.show()
 
-        # TEST: find average of temperature column
-        print("average dataframe")
-        startTime = time.monotonic()
-        dataframe.agg({'temperature': 'avg'}).show()
-        endTime = time.monotonic()
-        print("dataframe avg complete, in ", (endTime - startTime), " s")
+        # Step #5 - limiting number of partitions that the operation can run on
+        # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
+        for activePartitions in range(1, numPartitions):
+            # over-write dataframe with itself, limited to activePartitions number of partitions
+            dataframe = dataframe.coalesce(activePartitions)
+            # TEST: find average of temperature column
+            print("average dataframe with ", activePartitions, " partitions")
+            startTime = time.monotonic()
+            dataframe.agg({'temperature': 'avg'}).show()
+            endTime = time.monotonic()
+            print("dataframe avg complete, in ", (endTime - startTime), " s")
