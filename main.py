@@ -59,71 +59,82 @@ for filename in databaseFilenames:
 # if not printing whole contents of array "data" use this line to show output.csv has finished being read
 print("finished reading .csv files")
 
-if True:
-    # make note of number of rows in array "data": rows = # of measurements -1 (for headers
-    entries = len(data)
-    print("The number of entries in data is ", entries)
+# make note of number of rows in array "data": rows = # of measurements -1 (for headers
+entries = len(data)
+print("The number of entries in data is ", entries)
 
-    # uncomment these as necessary
-    # show contents of csv file
-    #print("content:", data)
+# uncomment these as necessary
+# show contents of csv file
+#print("content:", data)
 
-    # show contents of columns
-    #print("headers:", columns)
-
+# show contents of columns
+#print("headers:", columns)
 
 
-    # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
-    # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
-    # step #2.2 - follow the steps in this guide to install pySpark on your machine
-    # source: https://gongster.medium.com/how-to-use-pyspark-in-pycharm-ide-2fd8997b1cdd
-    # step # 2.9 - use time measurement capability per https://docs.python.org/3/library/time.html
-    # step #3 - start a spark session from pyspark.sql module
-    # source: https://www.geeksforgeeks.org/find-minimum-maximum-and-average-value-of-pyspark-dataframe-column/
-    from pyspark.sql import SparkSession
 
-    # create spark session using the 'oceanspark' name
-    print("create spark session")
+# step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
+# source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
+# step #2.2 - follow the steps in this guide to install pySpark on your machine
+# source: https://gongster.medium.com/how-to-use-pyspark-in-pycharm-ide-2fd8997b1cdd
+# step # 2.9 - use time measurement capability per https://docs.python.org/3/library/time.html
+# step #3 - start a spark session from pyspark.sql module
+# source: https://www.geeksforgeeks.org/find-minimum-maximum-and-average-value-of-pyspark-dataframe-column/
+from pyspark.sql import SparkSession
+
+# create spark session using the 'oceanspark' name
+print("create spark session")
+startTime = time.monotonic()
+spark = SparkSession.builder.appName('oceanspark').getOrCreate()
+endTime = time.monotonic()
+print("spark session made, in ", (endTime - startTime), " s")
+
+# Step #4 - create and act on the dataframe repeatedly,
+#   each time using a larger portion of the dataset up to the dataset's actual size
+# count down from number A to (number B +1),
+#  rows to read (maxRows) from array "data" becomes larger with each loop
+# change this variable to change the size otaf the dataset being used
+# ex. lines to be read each time will be = dataset * (1 / dataPortion)
+dataPortion = 4
+
+# create storage list of 5-tuples
+timeMeasures = []
+
+for number in range(dataPortion, 0, -1):
+    print("this dataframe contains ", number, "/", dataPortion, " of the total data")
+    # create a max number of rows to read
+    maxRows = round(entries / number)
+
+    # creating a dataframe from the data we grabbed from the csvs in step #2
+    #print("create dataframe")
     startTime = time.monotonic()
-    spark = SparkSession.builder.appName('oceanspark').getOrCreate()
+    dataframe = spark.createDataFrame(data[0:maxRows], columns)
     endTime = time.monotonic()
-    print("spark session made, in ", (endTime - startTime), " s")
+    wholeDFtime = endTime - startTime
+    print("whole dataframe created, in ", wholeDFtime, " s")
+    numPartitions = dataframe.rdd.getNumPartitions()
+    #print("Maximum partitions ", numPartitions)
 
-    # Step #4 - create and act on the dataframe repeatedly,
-    #   each time using a larger portion of the dataset up to the dataset's actual size
-    # count down from number A to (number B +1),
-    #  rows to read (maxRows) from array "data" becomes larger with each loop
-    #  ex. maxRows = rows in data / number ... rows / 3, rows / 2 , rows / 1, stop
-    
-    # change this variable to change the size otaf the dataset being used
-    # ex. da
-    dataPortion = 4
+    # display dataframe
+    # dataframe.show()
 
-    for number in range(dataPortion, 0, -1):
-        print("this dataframe contains ", number, "/", dataPortion, " of the total data")
-        # create a max number of rows to read
-        maxRows = round(entries / number)
-
-        # creating a dataframe from the data we grabbed from the csvs in step #2
-        print("create dataframe")
+    # Step #5 - limiting number of partitions that the operation can run on
+    # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
+    for activePartitions in range(1, numPartitions):
+        # over-write dataframe with itself, limited to activePartitions number of partitions
         startTime = time.monotonic()
-        dataframe = spark.createDataFrame(data[0:maxRows], columns)
+        reducedDF = dataframe.coalesce(activePartitions)
         endTime = time.monotonic()
-        print("dataframe created, in ", (endTime - startTime), " s")
-        numPartitions = dataframe.rdd.getNumPartitions()
-        print("Maximum partitions ", numPartitions)
+        reducePartDFtime = endTime - startTime
+        #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
+        # TEST: find average of temperature column
+        #print("average dataframe with ", activePartitions, " partitions")
+        startTime = time.monotonic()
+        reducedDF.agg({'temperature': 'avg'})#.show()
+        endTime = time.monotonic()
+        avgDFtime = endTime - startTime
+        #print("dataframe avg complete, in ", avgDFtime, " s")
+        # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
+        timeMeasures.append([maxRows, activePartitions, wholeDFtime, reducePartDFtime, avgDFtime])
 
-        # display dataframe
-        # dataframe.show()
-
-        # Step #5 - limiting number of partitions that the operation can run on
-        # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
-        for activePartitions in range(1, numPartitions):
-            # over-write dataframe with itself, limited to activePartitions number of partitions
-            dataframe = dataframe.coalesce(activePartitions)
-            # TEST: find average of temperature column
-            print("average dataframe with ", activePartitions, " partitions")
-            startTime = time.monotonic()
-            dataframe.agg({'temperature': 'avg'}).show()
-            endTime = time.monotonic()
-            print("dataframe avg complete, in ", (endTime - startTime), " s")
+for entry in timeMeasures:
+    print("rows read: ", entry[0], " partitions : ", entry[1], " creating wholeDF: ", entry[2], " creating reduced partitions DF: ", entry[3], " time to avg reduced DF: ", entry[4])
