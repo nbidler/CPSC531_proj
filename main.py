@@ -35,7 +35,7 @@ data = []
 for filename in databaseFilenames:
     # debug line for timing reading input file
     print("read data from file start")
-    startTime = time.monotonic()
+    startTime = time.monotonic_ns()
 
     prevLen = len(data)
     with open(filename, newline='') as file:
@@ -48,7 +48,7 @@ for filename in databaseFilenames:
         for row in reader:
             data.append(row[:])
     # end of reading input file
-    endTime = time.monotonic()
+    endTime = time.monotonic_ns()
     newLen = len(data)
     print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
@@ -83,9 +83,9 @@ from pyspark.sql import SparkSession
 
 # create spark session using the 'oceanspark' name
 print("create spark session")
-startTime = time.monotonic()
+startTime = time.monotonic_ns()
 spark = SparkSession.builder.appName('oceanspark').getOrCreate()
-endTime = time.monotonic()
+endTime = time.monotonic_ns()
 print("spark session made, in ", (endTime - startTime), " s")
 
 # Step #4 - create and act on the dataframe repeatedly,
@@ -94,21 +94,29 @@ print("spark session made, in ", (endTime - startTime), " s")
 #  rows to read (maxRows) from array "data" becomes larger with each loop
 # change this variable to change the size otaf the dataset being used
 # ex. lines to be read each time will be = dataset * (1 / dataPortion)
-dataPortion = 4
+
+# lists all fractions up to a given denominator
+fractions = []
+target = 5
+
+for denominator in range(target, 0, -1):
+    for numerator in range(1, target):
+        if numerator < denominator:
+            fractions.append([numerator, denominator])
 
 # create storage list of 5-tuples
 timeMeasures = []
 
-for number in range(dataPortion, 0, -1):
+for number in fractions:
     print("this dataframe contains 1/", number, " of the total data")
     # create a max number of rows to read
-    maxRows = round(entries / number)
+    maxRows = round(entries * (number[0] / number[1]))
 
     # creating a dataframe from the data we grabbed from the csvs in step #2
     #print("create dataframe")
-    startTime = time.monotonic()
+    startTime = time.monotonic_ns()
     dataframe = spark.createDataFrame(data[0:maxRows], columns)
-    endTime = time.monotonic()
+    endTime = time.monotonic_ns()
     wholeDFtime = endTime - startTime
     #print("whole dataframe created, in ", wholeDFtime, " s")
     numPartitions = dataframe.rdd.getNumPartitions()
@@ -119,23 +127,20 @@ for number in range(dataPortion, 0, -1):
 
     # Step #5 - limiting number of partitions that the operation can run on
     # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
-    for activePartitions in range(1, numPartitions):
+    for activePartitions in range(1, numPartitions+1):
         # over-write dataframe with itself, limited to activePartitions number of partitions
-        startTime = time.monotonic()
         reducedDF = dataframe.coalesce(activePartitions)
-        endTime = time.monotonic()
-        reducePartDFtime = endTime - startTime
-        print("this dataframe contains ", activePartitions, " active Partitions")
+        print("this dataframe contains ", number[0], "/", number[1]), " active Partitions")
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
         #print("average dataframe with ", activePartitions, " partitions")
-        startTime = time.monotonic()
+        startTime = time.monotonic_ns()
         reducedDF.agg({'temperature': 'avg'})#.show()
-        endTime = time.monotonic()
+        endTime = time.monotonic_ns()
         avgDFtime = endTime - startTime
         #print("dataframe avg complete, in ", avgDFtime, " s")
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
-        timeMeasures.append([maxRows, activePartitions, wholeDFtime, reducePartDFtime, avgDFtime])
+        timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
 for entry in timeMeasures:
-    print("rows read: ", entry[0], " partitions : ", entry[1], " creating wholeDF: ", entry[2], " creating reduced partitions DF: ", entry[3], " time to avg reduced DF: ", entry[4])
+    print("rows read: ", entry[0], " partitions : ", entry[1], " creating wholeDF: ", entry[2], " time to avg reduced DF: ", entry[3])
