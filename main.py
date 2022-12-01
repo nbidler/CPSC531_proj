@@ -1,5 +1,7 @@
 # importing findspark to add pyspark to sys.path at runtime
 # source: https://towardsdatascience.com/how-to-use-pyspark-on-your-computer-9c7180075617
+import time
+
 import findspark
 findspark.init()
 
@@ -13,42 +15,106 @@ import xarray as xr
 nc = xr.open_dataset('https://sccoos.org/thredds/dodsC/autoss/newport_pier-2007.nc')
 nc.precip.to_dataframe().to_csv('output.csv')
 '''
+# open the list of databases and extract the list of locally stored CSV files
+databaseFilenames = []
+with open('urls_sorted.txt', newline='') as file:
+    for url in file:
+        dataName = url[url.rfind('/') + 1:url.rfind('.')]
+        databaseFilenames.append(dataName + '.csv')
 
+print(databaseFilenames)
 # step #2 - import csv module we created earlier
 # put headers separately into one list and data in another list
 # source: https://www.geeksforgeeks.org/python-read-csv-column-into-list-without-header/
 import csv
 
-with open('output.csv', newline='') as file:
-    reader = csv.reader(file, delimiter=',')
+# the too-large array to hold all data
+data = []
 
-    # store column names into a list here
-    columns = next(reader)
+for filename in databaseFilenames:
+    # debug line for timing reading input file
+    print("read data from file start")
+    startTime = time.monotonic()
 
-    # store all ocean algae data into a list here
-    data = []
-    for row in reader:
-        data.append(row[:])
+    prevLen = len(data)
+    with open(filename, newline='') as file:
+        reader = csv.reader(file, delimiter=',')
 
-# uncomment these as necessary
-# show contents of csv file
-print("content:", data)
+        # store column names into a list here
+        columns = next(reader)
 
-# show contents of columns
-print("headers:", columns)
+        # store all ocean algae data into a list here
+        #data = []
 
-# step #3 - start a spark session from pyspark.sql module
-# source: https://www.geeksforgeeks.org/find-minimum-maximum-and-average-value-of-pyspark-dataframe-column/
-from pyspark.sql import SparkSession
+        for row in reader:
+            data.append(row[:])
+    # end of reading input file
+    endTime = time.monotonic()
+    newLen = len(data)
+    #print("headers from ", filename)
+    #print(columns)
+    print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
-# create spark session using the 'oceanspark' name
-spark = SparkSession.builder.appName('oceanspark').getOrCreate()
+    if len(data) > 100000:
+        break
 
-# creating a dataframe from the data we grabbed from the csvs in step #2
-dataframe = spark.createDataFrame(data, columns)
+#for x in range(0, 10):
+#    print(data[x])
+#    for entry in data[x]:
+#        print(entry, " type ", type(entry))
 
-# display dataframe
-dataframe.show()
+if True:
+    # make note of number of rows in array "data": rows = # of measurements -1 (for headers
+    entries = len(data)
+    print("The number of entries in data is ", entries -1)
 
-# TEST: find average of temperature column
-dataframe.agg({'temperature': 'avg'}).show()
+    # uncomment these as necessary
+    # show contents of csv file
+    #print("content:", data)
+
+    # show contents of columns
+    #print("headers:", columns)
+
+    # if not printing whole contents of array "data" use this line to show output.csv has finished being read
+    print("finished reading output.csv")
+
+    # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
+    # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
+    # step #2.2 - follow the steps in this guide to install pySpark on your machine
+    # source: https://gongster.medium.com/how-to-use-pyspark-in-pycharm-ide-2fd8997b1cdd
+    # step # 2.9 - use time measurement capability per https://docs.python.org/3/library/time.html
+    # step #3 - start a spark session from pyspark.sql module
+    # source: https://www.geeksforgeeks.org/find-minimum-maximum-and-average-value-of-pyspark-dataframe-column/
+    from pyspark.sql import SparkSession
+
+    # create spark session using the 'oceanspark' name
+    print("create spark session")
+    startTime = time.monotonic()
+    spark = SparkSession.builder.appName('oceanspark').getOrCreate()
+    endTime = time.monotonic()
+    print("spark session made, in ", (endTime - startTime), " s")
+
+    # count down from number A to (number B +1),
+    #  rows to read (maxRows) from array "data" becomes larger with each loop
+    #  ex. maxRows = rows in data / number ... rows / 3, rows / 2 , rows / 1, stop
+    for number in range(4, 0, -1):
+        # create a max number of rows to read
+        maxRows = round(entries / number)
+
+        # creating a dataframe from the data we grabbed from the csvs in step #2
+        print("create dataframe")
+        startTime = time.monotonic()
+        dataframe = spark.createDataFrame(data[0:maxRows], columns)
+        endTime = time.monotonic()
+        print("dataframe created, in ", (endTime - startTime), " s")
+        print("partitions ", dataframe.rdd.getNumPartitions())
+
+        # display dataframe
+        # dataframe.show()
+
+        # TEST: find average of temperature column
+        print("average dataframe")
+        startTime = time.monotonic()
+        dataframe.agg({'temperature': 'avg'}).show()
+        endTime = time.monotonic()
+        print("dataframe avg complete, in ", (endTime - startTime), " s")
