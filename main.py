@@ -37,7 +37,6 @@ for filename in databaseFilenames:
     print("read data from file start")
     startTime = time.monotonic_ns()
 
-    prevLen = len(data)
     with open(filename, newline='') as file:
         reader = csv.reader(file, delimiter=',')
 
@@ -49,7 +48,7 @@ for filename in databaseFilenames:
             data.append(row[:])
     # end of reading input file
     endTime = time.monotonic_ns()
-    newLen = len(data)
+
     print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
     # for purposes of testing, keep the "maximum" size small
@@ -108,10 +107,10 @@ for denominator in range(target, 0, -1):
 timeMeasures = []
 
 for number in fractions:
-    print("this dataframe contains 1/", number, " of the total data")
+    print("this dataframe contains ", number[0], "/", number[1], " of the total data")
     # create a max number of rows to read
     maxRows = round(entries * (number[0] / number[1]))
-
+    print("rows to read: ", maxRows)
     # creating a dataframe from the data we grabbed from the csvs in step #2
     #print("create dataframe")
     startTime = time.monotonic_ns()
@@ -122,25 +121,26 @@ for number in fractions:
     numPartitions = dataframe.rdd.getNumPartitions()
     #print("Maximum partitions ", numPartitions)
 
-    # display dataframe
-    # dataframe.show()
-
     # Step #5 - limiting number of partitions that the operation can run on
     # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
     for activePartitions in range(1, numPartitions+1):
         # over-write dataframe with itself, limited to activePartitions number of partitions
         reducedDF = dataframe.coalesce(activePartitions)
-        print("this dataframe contains ", number[0], "/", number[1]), " active Partitions")
+        print("this dataframe contains ", activePartitions, " active Partitions")
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
         #print("average dataframe with ", activePartitions, " partitions")
         startTime = time.monotonic_ns()
-        reducedDF.agg({'temperature': 'avg'})#.show()
+        reducedDF.agg({'temperature':'avg', 'conductivity':'avg', 'salinity':'avg', 'chlorophyll':'avg'}).collect()#.show()
+        #reducedDF.agg('temperature', 'conductivity', 'salinity', 'chlorophyll')
         endTime = time.monotonic_ns()
         avgDFtime = endTime - startTime
         #print("dataframe avg complete, in ", avgDFtime, " s")
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
+# Step #5 - having gathered the data, visualize it for ease of understanding
+#   TODO - install matplotlib to turn the data into a graph
+#     data size vs. time elapsed, with one line per "total number of partitions"
 for entry in timeMeasures:
     print("rows read: ", entry[0], " partitions : ", entry[1], " creating wholeDF: ", entry[2], " time to avg reduced DF: ", entry[3])
