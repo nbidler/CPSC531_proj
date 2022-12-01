@@ -55,18 +55,14 @@ for filename in databaseFilenames:
     #print(columns)
     print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
+    # for purposes of testing, keep the "maximum" size small
     if len(data) > 100000:
         break
-
-#for x in range(0, 10):
-#    print(data[x])
-#    for entry in data[x]:
-#        print(entry, " type ", type(entry))
 
 if True:
     # make note of number of rows in array "data": rows = # of measurements -1 (for headers
     entries = len(data)
-    print("The number of entries in data is ", entries -1)
+    print("The number of entries in data is ", entries)
 
     # uncomment these as necessary
     # show contents of csv file

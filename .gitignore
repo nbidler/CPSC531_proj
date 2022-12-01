@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 *.csv
 .ipynb_checkpoints/
+=======
+output.csv
+.idea/
+>>>>>>> 9c314d97db4b31aacb8e7553a17b1cf5a99b6734
