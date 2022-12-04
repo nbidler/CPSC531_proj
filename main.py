@@ -46,6 +46,7 @@ for filename in databaseFilenames:
         # store data from file into list, which pySpark can read
         for row in reader:
             data.append(row[:])
+
     # end of reading input file
     endTime = time.monotonic_ns()
 
@@ -81,11 +82,11 @@ print("The number of entries in data is ", entries)
 from pyspark.sql import SparkSession
 
 # create spark session using the 'oceanspark' name
-print("create spark session")
-startTime = time.monotonic_ns()
+#print("create spark session")
+#startTime = time.monotonic_ns()
 spark = SparkSession.builder.appName('oceanspark').getOrCreate()
-endTime = time.monotonic_ns()
-print("spark session made, in ", (endTime - startTime), " s")
+#endTime = time.monotonic_ns()
+#print("spark session made, in ", (endTime - startTime), " s")
 
 # Step #4 - create and act on the dataframe repeatedly,
 #   each time using a larger portion of the dataset up to the dataset's actual size
@@ -100,9 +101,12 @@ target = 5
 
 for denominator in range(target, 0, -1):
     for numerator in range(1, target):
-        if numerator < denominator:
-            fractions.append([numerator, denominator])
+        if (numerator < denominator):
+            if (denominator % numerator != 0) or (numerator == 1):
+                fractions.append([numerator, denominator])
 
+# finally do full data set, 1/1
+fractions.append([1, 1])
 # create storage list of 5-tuples
 timeMeasures = []
 
@@ -139,8 +143,52 @@ for number in fractions:
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
+    #break
+
+# we now have all the time data in one place
+
 # Step #5 - having gathered the data, visualize it for ease of understanding
-#   TODO - install matplotlib to turn the data into a graph
-#     data size vs. time elapsed, with one line per "total number of partitions"
-for entry in timeMeasures:
-    print("rows read: ", entry[0], " partitions : ", entry[1], " creating wholeDF: ", entry[2], " time to avg reduced DF: ", entry[3])
+# source: https://matplotlib.org/stable/tutorials/introductory/pyplot.html
+
+import matplotlib.pyplot as plt
+
+# X axis displays number of lines read
+xAxis = []
+# Y axis displays time, but must have multiple arrays, DF creation and AVG operation
+yDF = []
+yAVG = []
+
+# we now have all the time data in one place
+
+# create number of y measurements equal to numPartitions
+# number of partitions for data point = array index (1 part at index 1, 2 at 2, etc)
+for amtPartitions in range(numPartitions+1):
+    yDF.append([])
+    yAVG.append([])
+
+curPos = 0
+endPos = len(timeMeasures)
+for curPos in range(endPos):
+    #print(type(timeMeasures[curPos][0]), " ", timeMeasures[curPos][0])
+    print("rows read: ", timeMeasures[curPos][0], " partitions : ", timeMeasures[curPos][1], " creating wholeDF: ", timeMeasures[curPos][2], " time to avg reduced DF: ", timeMeasures[curPos][3])
+    # keep track of what amt of partition was being used
+    parts = (curPos+1) % numPartitions
+    if parts == 0:
+        parts = 12
+    print("curPos ", curPos, " partitions ", parts)
+    # only measure the xAxis every time it changes
+    if parts == 1:
+        print(timeMeasures[curPos])
+        xAxis.append(timeMeasures[curPos][0])
+    yDF[parts].append(timeMeasures[curPos][2])
+    #print(timeMeasures[curPos])
+    yAVG[parts].append(timeMeasures[curPos][3])
+    #print(timeMeasures[curPos])
+
+print("xAxis ", xAxis)
+print("yDF ")
+for entry in yDF:
+    print(entry)
+print("yAVG ")
+for entry in yAVG:
+    print(entry)
