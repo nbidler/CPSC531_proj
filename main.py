@@ -141,11 +141,12 @@ for number in fractions:
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
-    if maxRows > 100000:#number[1]<4:
-        break
+    # if maxRows > 10000:
+    #     break
 
 # we now have all the time data in one place
-
+for measure in timeMeasures:
+    print("rows read: ", measure[0], " partitions : ", measure[1], " creating wholeDF: ", measure[2], " time to avg reduced DF: ", measure[3])
 # X axis displays number of lines read
 xAxis = []
 # Y axis displays time, but must have multiple arrays, DF creation and AVG operation
@@ -201,13 +202,13 @@ dataSlices = len(yDF) -1
 #print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
 
 #print("yDF")
-for index in range(dataSlices):
+for index in range(len(xAxis)):
     # print("index ", index)
     # print("xAxis ", xAxis)
     # print(" yDF ", yDF[index+1])
     # print(" yAVG ", yAVG[index+1])
     # print(" colors ", colors[index])
-    plt.plot(xAxis, yDF[index+1], c=colors[index], label= (index+1, 'partitions'))
+    plt.plot(xAxis, yDF[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
 plt.xlabel('Lines Read')
@@ -221,7 +222,7 @@ plt.figure(2)
 
 #print("yAVG")
 for index in range(dataSlices):
-    plt.plot(xAxis, yAVG[index+1], c=colors[index], label= (index+1, 'partitions'))
+    plt.plot(xAxis, yAVG[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
 plt.xlabel('Lines Read')
