@@ -5,7 +5,6 @@ databaseURLlist = []
 with open('urls_sorted.txt', newline='') as file:
     for url in file:
         databaseURLlist.append(url)
-        break
 
 print(databaseURLlist)
 
