@@ -35,7 +35,7 @@ data = []
 for filename in databaseFilenames:
     # debug line for timing reading input file
     print("read data from file start")
-    startTime = time.monotonic_ns()
+    startTime = time.monotonic()
 
     with open(filename, newline='') as file:
         reader = csv.reader(file, delimiter=',')
@@ -48,7 +48,7 @@ for filename in databaseFilenames:
             data.append(row[:])
 
     # end of reading input file
-    endTime = time.monotonic_ns()
+    endTime = time.monotonic()
 
     print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
 
@@ -83,9 +83,9 @@ from pyspark.sql import SparkSession
 
 # create spark session using the 'oceanspark' name
 #print("create spark session")
-#startTime = time.monotonic_ns()
+#startTime = time.monotonic()
 spark = SparkSession.builder.appName('oceanspark').getOrCreate()
-#endTime = time.monotonic_ns()
+#endTime = time.monotonic()
 #print("spark session made, in ", (endTime - startTime), " s")
 
 # Step #4 - create and act on the dataframe repeatedly,
@@ -117,9 +117,9 @@ for number in fractions:
     print("rows to read: ", maxRows)
     # creating a dataframe from the data we grabbed from the csvs in step #2
     #print("create dataframe")
-    startTime = time.monotonic_ns()
+    startTime = time.monotonic()
     dataframe = spark.createDataFrame(data[0:maxRows], columns)
-    endTime = time.monotonic_ns()
+    endTime = time.monotonic()
     wholeDFtime = endTime - startTime
     #print("whole dataframe created, in ", wholeDFtime, " s")
     numPartitions = dataframe.rdd.getNumPartitions()
@@ -134,23 +134,19 @@ for number in fractions:
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
         #print("average dataframe with ", activePartitions, " partitions")
-        startTime = time.monotonic_ns()
+        startTime = time.monotonic()
         reducedDF.agg({'temperature':'avg', 'conductivity':'avg', 'salinity':'avg', 'chlorophyll':'avg'}).collect()#.show()
         #reducedDF.agg('temperature', 'conductivity', 'salinity', 'chlorophyll')
-        endTime = time.monotonic_ns()
+        endTime = time.monotonic()
         avgDFtime = endTime - startTime
         #print("dataframe avg complete, in ", avgDFtime, " s")
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
-    #break
+    if :#number[1]<4:
+        break
 
 # we now have all the time data in one place
-
-# Step #5 - having gathered the data, visualize it for ease of understanding
-# source: https://matplotlib.org/stable/tutorials/introductory/pyplot.html
-
-import matplotlib.pyplot as plt
 
 # X axis displays number of lines read
 xAxis = []
@@ -170,25 +166,65 @@ curPos = 0
 endPos = len(timeMeasures)
 for curPos in range(endPos):
     #print(type(timeMeasures[curPos][0]), " ", timeMeasures[curPos][0])
-    print("rows read: ", timeMeasures[curPos][0], " partitions : ", timeMeasures[curPos][1], " creating wholeDF: ", timeMeasures[curPos][2], " time to avg reduced DF: ", timeMeasures[curPos][3])
+    #print("rows read: ", timeMeasures[curPos][0], " partitions : ", timeMeasures[curPos][1], " creating wholeDF: ", timeMeasures[curPos][2], " time to avg reduced DF: ", timeMeasures[curPos][3])
     # keep track of what amt of partition was being used
     parts = (curPos+1) % numPartitions
     if parts == 0:
         parts = 12
-    print("curPos ", curPos, " partitions ", parts)
+    # print("curPos ", curPos, " partitions ", parts)
     # only measure the xAxis every time it changes
     if parts == 1:
-        print(timeMeasures[curPos])
+        #print(timeMeasures[curPos])
         xAxis.append(timeMeasures[curPos][0])
     yDF[parts].append(timeMeasures[curPos][2])
     #print(timeMeasures[curPos])
     yAVG[parts].append(timeMeasures[curPos][3])
     #print(timeMeasures[curPos])
 
-print("xAxis ", xAxis)
-print("yDF ")
-for entry in yDF:
-    print(entry)
-print("yAVG ")
-for entry in yAVG:
-    print(entry)
+# print("xAxis ", xAxis)
+# print("yDF ")
+# for entry in yDF:
+#     print(entry)
+# print("yAVG ")
+# for entry in yAVG:
+#     print(entry)
+
+# Step #5 - having gathered the data, visualize it for ease of understanding
+# source: https://matplotlib.org/stable/tutorials/introductory/pyplot.html
+# source: https://stackoverflow.com/questions/4971269/how-to-pick-a-new-color-for-each-plotted-line-within-a-figure-in-matplotlib
+
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import cm
+import numpy as np
+
+colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
+
+dataSlices = len(yDF) -1
+print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
+
+print("yDF")
+for index in range(dataSlices):
+    # print("index ", index)
+    # print("xAxis ", xAxis)
+    # print(" yDF ", yDF[index+1])
+    # print(" yAVG ", yAVG[index+1])
+    # print(" colors ", colors[index])
+    plt.plot(xAxis, yDF[index+1], c=colors[index], label= (index+1, 'partitions'))
+    #print(index, " ", colors[index])
+
+plt.xlabel('Lines Read')
+plt.ylabel('Time (seconds)')
+plt.title("time to create dataframe")
+plt.savefig("DFgraph.png")
+#plt.show()
+
+print("yAVG")
+for index in range(dataSlices):
+    plt.plot(xAxis, yAVG[index+1], c=colors[index], label= (index+1, 'partitions'))
+    #print(index, " ", colors[index])
+
+plt.xlabel('Lines Read')
+plt.ylabel('Time (seconds)')
+plt.title("time to average dataframe")
+plt.savefig("AVGgraph.png")
+#plt.show()
