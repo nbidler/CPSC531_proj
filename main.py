@@ -70,8 +70,6 @@ print("The number of entries in data is ", entries)
 # show contents of columns
 #print("headers:", columns)
 
-
-
 # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
 # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
 # step #2.2 - follow the steps in this guide to install pySpark on your machine
@@ -134,16 +132,16 @@ for number in fractions:
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
         #print("average dataframe with ", activePartitions, " partitions")
-        startTime = time.monotonic()
+        startTime = time.monotonic_ns()
         reducedDF.agg({'temperature':'avg', 'conductivity':'avg', 'salinity':'avg', 'chlorophyll':'avg'}).collect()#.show()
         #reducedDF.agg('temperature', 'conductivity', 'salinity', 'chlorophyll')
-        endTime = time.monotonic()
+        endTime = time.monotonic_ns()
         avgDFtime = endTime - startTime
         #print("dataframe avg complete, in ", avgDFtime, " s")
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
-    if :#number[1]<4:
+    if maxRows > 100000:#number[1]<4:
         break
 
 # we now have all the time data in one place
@@ -198,11 +196,11 @@ from matplotlib.pyplot import cm
 import numpy as np
 
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
-
+plt.figure(1)
 dataSlices = len(yDF) -1
-print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
+#print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
 
-print("yDF")
+#print("yDF")
 for index in range(dataSlices):
     # print("index ", index)
     # print("xAxis ", xAxis)
@@ -216,9 +214,12 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
 plt.savefig("DFgraph.png")
+plt.legend()
 #plt.show()
 
-print("yAVG")
+plt.figure(2)
+
+#print("yAVG")
 for index in range(dataSlices):
     plt.plot(xAxis, yAVG[index+1], c=colors[index], label= (index+1, 'partitions'))
     #print(index, " ", colors[index])
@@ -227,4 +228,5 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
 plt.savefig("AVGgraph.png")
+plt.legend()
 #plt.show()
