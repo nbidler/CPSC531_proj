@@ -132,7 +132,7 @@ for number in fractions:
     # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
     for activePartitions in range(1, numPartitions+1):
         # over-write dataframe with itself, limited to activePartitions number of partitions
-        reducedDF = dataframe.coalesce(activePartitions)
+        reducedDF = dataframe.repartition(activePartitions)
         print("this dataframe contains ", activePartitions, " active Partitions")
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
