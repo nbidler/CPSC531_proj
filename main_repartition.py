@@ -150,15 +150,15 @@ for number in fractions:
     #     break
 
 # we now have all the time data in one place
-for measure in timeMeasures:
-    print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
+# for measure in timeMeasures:
+#     print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2],
+#           " time to avg slice of DF: ", measure[3])
+
 # X axis displays number of lines read
 xAxis = []
 # Y axis displays time, but must have multiple arrays, DF creation and AVG operation
 yDF = []
 yAVG = []
-
-# we now have all the time data in one place
 
 # create number of y measurements equal to numPartitions
 # number of partitions for data point = array index (1 part at index 1, 2 at 2, etc)
@@ -201,6 +201,10 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 
+rawdata = np.asarray(timeMeasures)
+timestamp = time.strftime("%Y%m%d-%H%M%S")
+np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
+
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
 plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
@@ -219,7 +223,6 @@ for index in range(len(xAxis)):
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
-timestamp = time.strftime("%Y%m%d-%H%M%S")
 plt.savefig("repartition_DFgraph" + timestamp + ".png", bbox_inches='tight')
 #plt.show()
 
@@ -234,6 +237,5 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-timestamp = time.strftime("%Y%m%d-%H%M%S")
 plt.savefig("repartition_AVGgraph" + timestamp + ".png", bbox_inches='tight')
 #plt.show()
