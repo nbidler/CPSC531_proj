@@ -93,20 +93,25 @@ spark = SparkSession.builder.appName('oceanspark').getOrCreate()
 # change this variable to change the size otaf the dataset being used
 # ex. lines to be read each time will be = dataset * (1 / dataPortion)
 
+# NOTE - this code does generate all fractions from 1/5 up to 1/1, but out of order
 # lists all fractions up to a given denominator
-fractions = []
-target = 5
+# fractions = []
+# target = 5
+# for denominator in range(target, 0, -1):
+#     for numerator in range(1, target):
+#         if (numerator < denominator):
+#             if (denominator % numerator != 0) or (numerator == 1):
+#                 fractions.append([numerator, denominator])
 
-for denominator in range(target, 0, -1):
-    for numerator in range(1, target):
-        if (numerator < denominator):
-            if (denominator % numerator != 0) or (numerator == 1):
-                fractions.append([numerator, denominator])
+# hard-coding for output sorting reasons, don't need to automate this yet
+fractions = ([1, 5], [1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1])
 
 # finally do full data set, 1/1
-fractions.append([1, 1])
+# fractions.append([1, 1])
 # create storage list of 5-tuples
 timeMeasures = []
+# assign variable a value for safety
+numPartitions = 0
 
 for number in fractions:
     print("this dataframe contains ", number[0], "/", number[1], " of the total data")
@@ -127,7 +132,7 @@ for number in fractions:
     # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
     for activePartitions in range(1, numPartitions+1):
         # over-write dataframe with itself, limited to activePartitions number of partitions
-        reducedDF = dataframe.coalesce(activePartitions)
+        reducedDF = dataframe.repartition(activePartitions)
         print("this dataframe contains ", activePartitions, " active Partitions")
         #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
         # TEST: find average of temperature column
@@ -141,11 +146,12 @@ for number in fractions:
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
-    if maxRows > 100000:#number[1]<4:
-        break
+    # if maxRows > 10000:
+    #     break
 
 # we now have all the time data in one place
-
+for measure in timeMeasures:
+    print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
 # X axis displays number of lines read
 xAxis = []
 # Y axis displays time, but must have multiple arrays, DF creation and AVG operation
@@ -196,37 +202,37 @@ from matplotlib.pyplot import cm
 import numpy as np
 
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
-plt.figure(1)
+plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
 #print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
 
 #print("yDF")
-for index in range(dataSlices):
+for index in range(len(xAxis)):
     # print("index ", index)
     # print("xAxis ", xAxis)
     # print(" yDF ", yDF[index+1])
     # print(" yAVG ", yAVG[index+1])
     # print(" colors ", colors[index])
-    plt.plot(xAxis, yDF[index+1], c=colors[index], label= (index+1, 'partitions'))
+    plt.plot(xAxis, yDF[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
-plt.savefig("DFgraph.png")
-plt.legend()
+plt.legend(bbox_to_anchor=(1.0, 1.0))
+plt.savefig("DFgraph.png", bbox_inches='tight')
 #plt.show()
 
-plt.figure(2)
+plt.figure(num=2, figsize=[10, 8])
 
 #print("yAVG")
 for index in range(dataSlices):
-    plt.plot(xAxis, yAVG[index+1], c=colors[index], label= (index+1, 'partitions'))
+    plt.plot(xAxis, yAVG[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
-plt.savefig("AVGgraph.png")
-plt.legend()
+plt.legend(bbox_to_anchor=(1.0, 1.0))
+plt.savefig("AVGgraph.png", bbox_inches='tight')
 #plt.show()
