@@ -201,6 +201,10 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 
+rawdata = np.asarray(timeMeasures)
+timestamp = time.strftime("%Y%m%d-%H%M%S")
+np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
+
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
 plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
@@ -220,14 +224,21 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-timestamp = time.strftime("%Y%m%d-%H%M%S")
 plt.savefig("coalesce_DFgraph_" + timestamp + ".png", bbox_inches='tight')
 #plt.show()
 
 plt.figure(num=2, figsize=[10, 8])
 
+print("index ", 0)
+print("xAxis ", len(xAxis))
+print(" yDF ", len(yDF[0+1]))
+print(" yAVG ", len(yAVG[0+1]))
+print(" colors ", len(colors))
+
 #print("yAVG")
 for index in range(dataSlices):
+    #print("index ", index, "xAxis ", len(xAxis), " yAVG ", len(yAVG[index + 1]))
+    #print(yAVG[index + 1])
     plt.plot(xAxis, yAVG[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
@@ -235,6 +246,5 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-timestamp = time.strftime("%Y%m%d-%H%M%S")
 plt.savefig("coalesce_AVGgraph_" + timestamp + ".png", bbox_inches='tight')
 #plt.show()
