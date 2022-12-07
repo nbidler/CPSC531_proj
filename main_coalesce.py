@@ -203,7 +203,7 @@ import numpy as np
 
 rawdata = np.asarray(timeMeasures)
 timestamp = time.strftime("%Y%m%d-%H%M%S")
-np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
+np.savetxt("coalesce_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
 
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
 plt.figure(num=1, figsize=[10, 8])
