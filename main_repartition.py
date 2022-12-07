@@ -174,7 +174,7 @@ for curPos in range(endPos):
     # keep track of what amt of partition was being used
     parts = (curPos+1) % numPartitions
     if parts == 0:
-        parts = 12
+        parts = numPartitions
     # print("curPos ", curPos, " partitions ", parts)
     # only measure the xAxis every time it changes
     if parts == 1:
@@ -201,6 +201,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 
+# exports the raw data to CSV file
 rawdata = np.asarray(timeMeasures)
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
@@ -230,6 +231,8 @@ plt.figure(num=2, figsize=[10, 8])
 
 #print("yAVG")
 for index in range(dataSlices):
+    # print("index ", index, "xAxis ", len(xAxis), " yAVG ", len(yAVG[index + 1]))
+    # print(yAVG[index + 1])
     plt.plot(xAxis, yAVG[index+1], c=colors[index], label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
