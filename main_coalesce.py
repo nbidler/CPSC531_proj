@@ -63,13 +63,6 @@ print("finished reading .csv files")
 entries = len(data)
 print("The number of entries in data is ", entries)
 
-# uncomment these as necessary
-# show contents of csv file
-#print("content:", data)
-
-# show contents of columns
-#print("headers:", columns)
-
 # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
 # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
 # step #2.2 - follow the steps in this guide to install pySpark on your machine
@@ -88,14 +81,14 @@ spark = SparkSession.builder.appName('oceanspark').getOrCreate()
 
 # Step #4 - create and act on the dataframe repeatedly,
 #   each time using a larger portion of the dataset up to the dataset's actual size
-# count down from number A to (number B +1),
-#  rows to read (maxRows) from array "data" becomes larger with each loop
-# change this variable to change the size otaf the dataset being used
-# ex. lines to be read each time will be = dataset * (1 / dataPortion)
 
 # NOTE - this code does generate all fractions from 1/5 up to 1/1, but out of order
+# count down from number A to (number B +1),
+# ex. lines to be read each time will be = dataset * (1 / dataPortion)
+
 # lists all fractions up to a given denominator
 # fractions = []
+# change this variable to change the fractions of the dataset being used
 # target = 5
 # for denominator in range(target, 0, -1):
 #     for numerator in range(1, target):
@@ -103,12 +96,10 @@ spark = SparkSession.builder.appName('oceanspark').getOrCreate()
 #             if (denominator % numerator != 0) or (numerator == 1):
 #                 fractions.append([numerator, denominator])
 
-# hard-coding for output sorting reasons, don't need to automate this yet
+# hard-coding for output sorting reasons, can automate if more data points needed
 fractions = ([1, 5], [1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1])
 
-# finally do full data set, 1/1
-# fractions.append([1, 1])
-# create storage list of 5-tuples
+# create storage list n-tuples
 timeMeasures = []
 # assign variable a value for safety
 numPartitions = 0
@@ -130,14 +121,14 @@ for number in fractions:
     # record the largest/longest number of partitions
     if numPartitions > maxPartitions:
         maxPartitions = numPartitions
-    #print("Maximum partitions ", numPartitions)
 
     # Step #5 - limiting number of partitions that the operation can run on
     # source: https://towardsdatascience.com/how-to-efficiently-re-partition-spark-dataframes-c036e8261418
     for activePartitions in range(1, numPartitions+1):
-        # create "broken" record with fewer max partitions
+        # for creating "broken" record with fewer max partitions
         # if (number[1] == 5) and (activePartitions > 4):
         #     continue
+
         # over-write dataframe with itself, limited to activePartitions number of partitions
         reducedDF = dataframe.coalesce(activePartitions)
         print("this dataframe contains ", activePartitions, " active Partitions")
@@ -153,12 +144,13 @@ for number in fractions:
         # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
+    # for local machine testing with small datasets
     # if number[0] == 2: #maxRows > 10000:
     #     break
 
 # we now have all the time data in one place
-for measure in timeMeasures:
-    print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
+# for measure in timeMeasures:
+#     print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
 
 # save this raw data to an output file
 import numpy as np
@@ -178,8 +170,8 @@ uniqueLines = []
 for measure in timeMeasures:
     if measure[0] not in uniqueLines:
         uniqueLines.append(measure[0])
-# check to see if xAxis populated correctly
-print("uniqueLines ", len(uniqueLines), uniqueLines)
+# check to see if uniqueLines populated correctly
+# print("uniqueLines ", len(uniqueLines), uniqueLines)
 # X axis displays number of lines read
 xAxis = []
 # Y axis displays time, but must have multiple arrays, DF creation and AVG operation
@@ -200,10 +192,11 @@ for item in range(totalEntries):
         #insert a new entry to maintain dimensions
         timeMeasures.insert(item+1, [ timeMeasures[item][0], timeMeasures[item][1]+1, None, None ] )
 
+# it always overshoots by one
 timeMeasures.pop()
 # our data should have same dimensions and gaps filled by None
-for measure in timeMeasures:
-    print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
+# for measure in timeMeasures:
+#     print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
 
 # go through timeMeasures by index
 # create number of y measurements equal to numPartitions
@@ -213,8 +206,8 @@ for amtPartitions in range(numPartitions+1):
     yAVG.append([])
 
 # check to see if prepared for population correctly
-print("yDF ", len(yDF), yDF)
-print("yAVG ", len(yAVG), yAVG)
+# print("yDF ", len(yDF), yDF)
+# print("yAVG ", len(yAVG), yAVG)
 
 curPos = 0
 endPos = len(timeMeasures)
@@ -236,19 +229,15 @@ for curPos in range(endPos):
     #print(timeMeasures[curPos])
 
 # check that transfer from timeMeasures to multiple different arrays worked
-print("xAxis ", xAxis)
-print("yDF ", len(yDF))
-for entry in yDF:
-    print(entry)
-print("yAVG ", len(yAVG))
-for entry in yAVG:
-    print(entry)
-# print("yDF ", yDF)
-# print("yAVG ", yAVG)
-# if insufficient entries to give all lists same dimensions,
+# print("xAxis ", xAxis)
+# print("yDF ", len(yDF))
+# for entry in yDF:
+#     print(entry)
+# print("yAVG ", len(yAVG))
+# for entry in yAVG:
+#     print(entry)
 
-
-# Step #5 - having gathered the data, visualize it for ease of understanding
+# Step #6 - having gathered the data, visualize it for ease of understanding
 # source: https://matplotlib.org/stable/tutorials/introductory/pyplot.html
 # source: https://stackoverflow.com/questions/4971269/how-to-pick-a-new-color-for-each-plotted-line-within-a-figure-in-matplotlib
 
@@ -260,36 +249,21 @@ plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
 print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
 
-#print("yDF")
+# plot 1 line per amt of partitions used
 for index in range(len(xAxis)):
-    # print("index ", index)
-    # print("xAxis ", xAxis)
-    # print(" yDF ", yDF[index+1])
-    # print(" yAVG ", yAVG[index+1])
-    # print(" colors ", colors[index])
     plt.plot(xAxis, yDF[index+1], c=colors[index], marker="o", label=(index+1, 'partitions'))
-    #print(index, " ", colors[index])
 
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("coalesce_DFgraph_" + timestamp + ".png", bbox_inches='tight')
-#plt.show()
+# dataframe graph saved
 
 plt.figure(num=2, figsize=[10, 8])
 
-# print("index ", 0)
-# print("xAxis ", len(xAxis))
-# print(" yDF ", len(yDF[0+1]))
-# print(" yAVG ", len(yAVG[0+1]))
-# print(" colors ", len(colors))
-
-#print("yAVG")
+# plot 1 line per amt of partitions used
 for index in range(dataSlices):
-    # print("index ", index, "xAxis ", len(xAxis), " yDF ", len(yDF[index+1]),  " yAVG ", len(yAVG[index + 1]))
-    # print(yDF[index + 1])
-    # print(yAVG[index + 1])
     plt.plot(xAxis, yAVG[index+1], c=colors[index],  marker="o", label=(index+1, 'partitions'))
     #print(index, " ", colors[index])
 
@@ -298,4 +272,4 @@ plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("coalesce_AVGgraph_" + timestamp + ".png", bbox_inches='tight')
-#plt.show()
+# averaging time graph saved
