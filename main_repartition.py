@@ -157,7 +157,7 @@ import numpy as np
 
 rawdata = np.asarray(timeMeasures)
 timestamp = time.strftime("%Y%m%d-%H%M%S")
-np.savetxt("coalesce_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
+np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
 
 # with all raw data saved, prepare data for graphing by filling gaps with None
 # matplotlib can skip over None data safely but can't handle different X and Y sizes
@@ -257,7 +257,7 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to create dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-plt.savefig("coalesce_DFgraph_" + timestamp + ".png", bbox_inches='tight')
+plt.savefig("repartition_DFgraph_" + timestamp + ".png", bbox_inches='tight')
 # dataframe graph saved
 
 plt.figure(num=2, figsize=[10, 8])
@@ -271,5 +271,5 @@ plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
 plt.title("time to average dataframe")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-plt.savefig("coalesce_AVGgraph_" + timestamp + ".png", bbox_inches='tight')
+plt.savefig("repartition_AVGgraph_" + timestamp + ".png", bbox_inches='tight')
 # averaging time graph saved
