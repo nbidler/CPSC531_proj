@@ -145,13 +145,13 @@ for number in fractions:
         timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
 
     # for local machine testing with small datasets
-    # if number[0] == 2: #maxRows > 10000:
+    # if number[1] == 2: #maxRows > 10000:
     #     break
 
 # we now have all the time data in one place
-# for measure in timeMeasures:
-#     print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-
+for measure in timeMeasures:
+    # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
+    print(measure)
 # save this raw data to an output file
 import numpy as np
 
@@ -159,6 +159,7 @@ rawdata = np.asarray(timeMeasures)
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 np.savetxt("repartition_raw"+timestamp+".csv", rawdata, delimiter=",", header="rows read,amount partitions,dataframe creation time,dataframe averaging time")
 
+print("preparing data for graphing")
 # with all raw data saved, prepare data for graphing by filling gaps with None
 # matplotlib can skip over None data safely but can't handle different X and Y sizes
 
@@ -195,9 +196,9 @@ for item in range(totalEntries):
 # it always overshoots by one
 timeMeasures.pop()
 # our data should have same dimensions and gaps filled by None
-# for measure in timeMeasures:
-#     print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-
+for measure in timeMeasures:
+    # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
+    print(measure)
 # go through timeMeasures by index
 # create number of y measurements equal to numPartitions
 # number of partitions for data point = array index (1 part at index 1, 2 at 2, etc)
@@ -247,7 +248,7 @@ from matplotlib.pyplot import cm
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
 plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
-print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
+print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " yAVG[0] ", len(yAVG[1]), len(yAVG[2]), " colors ", len(colors))
 
 # plot 1 line per amt of partitions used
 for index in range(len(xAxis)):
