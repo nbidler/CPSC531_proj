@@ -38,44 +38,45 @@ def getCSVfilenames():
 # source: https://www.geeksforgeeks.org/python-read-csv-column-into-list-without-header/
 
 
-def fromCSVtoList(databaseFilenames):
-    # the too-large array to hold all data
-    # store all ocean algae data into a list here
-    data = []
+# def fromCSVtoList(databaseFilenames):
+#     # the too-large array to hold all data
+#     # store all ocean algae data into a list here
+#     data = []
+#
+#     for filename in databaseFilenames:
+#         # debug line for timing reading input file
+#         print("read data from file start")
+#         startTime = time.monotonic()
+#
+#         with open(filename, newline='') as file:
+#             reader = csv.reader(file, delimiter=',')
+#
+#             # store column names into a list here
+#             columns = next(reader)
+#
+#             # store data from file into list, which pySpark can read
+#             data =
+#             # for row in reader:
+#             #     data.append(row[:])
+#
+#         # end of reading input file
+#         endTime = time.monotonic()
+#
+#         print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
+#
+#         # for purposes of testing, keep the "maximum" size small
+#         if len(data) > 10000:
+#             break
+#
+#     # if not printing whole contents of array "data" use this line to show output.csv has finished being read
+#     #print("finished reading .csv files")
+#
+#     # make note of number of rows in array "data": rows = # of measurements -1 (for headers
+#     #print("The number of entries in data is ", len(data))
+#     #return [columns, data]
 
-    for filename in databaseFilenames:
-        # debug line for timing reading input file
-        print("read data from file start")
-        startTime = time.monotonic()
 
-        with open(filename, newline='') as file:
-            reader = csv.reader(file, delimiter=',')
-
-            # store column names into a list here
-            columns = next(reader)
-
-            # store data from file into list, which pySpark can read
-            for row in reader:
-                data.append(row[:])
-
-        # end of reading input file
-        endTime = time.monotonic()
-
-        print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
-
-        # for purposes of testing, keep the "maximum" size small
-        if len(data) > 10000:
-            break
-
-    # if not printing whole contents of array "data" use this line to show output.csv has finished being read
-    print("finished reading .csv files")
-
-    # make note of number of rows in array "data": rows = # of measurements -1 (for headers
-    print("The number of entries in data is ", len(data))
-    return [columns, data]
-
-
-def sparkDFandAVG(columns, data):
+def sparkDFandAVG(databaseFilenames):
     # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
     # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
     # step #2.2 - follow the steps in this guide to install pySpark on your machine
@@ -94,6 +95,32 @@ def sparkDFandAVG(columns, data):
     # Step #4 - create and act on the dataframe repeatedly,
     #   each time using a larger portion of the dataset up to the dataset's actual size
 
+    #data = spark.read.options(header=True).csv(databaseFilenames)
+
+    # for filename in databaseFilenames:
+    #     # debug line for timing reading input file
+    #     print("read data from file start")
+    #     startTime = time.monotonic()
+    #
+    #     newData = spark.read.csv(filename)
+    #     data = data.union(newData)
+    #
+    #     # end of reading input file
+    #     endTime = time.monotonic()
+    #
+    #     print("read ", len(data), " files of data, in ", (endTime - startTime), " s")
+    #
+    #     # for purposes of testing, keep the "maximum" size small
+    #     if len(data) > 10000:
+    #         break
+
+    # if not printing whole contents of array "data" use this line to show output.csv has finished being read
+    #print("finished reading .csv files")
+
+    # make note of number of rows in array "data": rows = # of measurements -1 (for headers
+    #print("The number of entries in data is ", len(data))
+    #return [columns, data]
+
     # hard-coding for output sorting reasons, can automate if more data points needed
     fractions = ([1, 5], [1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1])
 
@@ -102,17 +129,18 @@ def sparkDFandAVG(columns, data):
     # assign variable a value for safety
     numPartitions = 0
     maxPartitions = 0
-    entries = len(data)
+    entries = len(databaseFilenames)
 
     for number in fractions:
         print("this dataframe contains ", number[0], "/", number[1], " of the total data")
         # create a max number of rows to read
-        maxRows = round(entries * (number[0] / number[1]))
-        print("rows to read: ", maxRows)
+        partial_list = databaseFilenames[0:round(entries * (number[0] / number[1]))]
+        maxFiles = round(entries * (number[0] / number[1]))
+        print("files to read: ", maxFiles)
         # creating a dataframe from the data we grabbed from the csvs in step #2
         #print("create dataframe")
         startTime = time.monotonic()
-        dataframe = spark.createDataFrame(data[0:maxRows], columns)
+        dataframe = spark.read.options(header=True).csv(partial_list)
         endTime = time.monotonic()
         wholeDFtime = endTime - startTime
         #print("whole dataframe created, in ", wholeDFtime, " s")
@@ -141,7 +169,7 @@ def sparkDFandAVG(columns, data):
             avgDFtime = endTime - startTime
             #print("dataframe avg complete, in ", avgDFtime, " s")
             # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
-            timeMeasures.append([maxRows, activePartitions, wholeDFtime, avgDFtime])
+            timeMeasures.append([maxFiles, activePartitions, wholeDFtime, avgDFtime])
 
         # for local machine testing with small datasets
         # if number[1] == 2: #maxRows > 10000:
@@ -166,26 +194,26 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # with all raw data saved, prepare data for graphing by filling gaps with None
     # matplotlib can skip over None data safely but can't handle different X and Y sizes
 
-    # determine how many unique numbers of lines were read
+    # determine how many unique numbers of files were read
     # Can't just use fractions because it might have terminated early
 
-    # X axis displays number of lines read
-    uniqueLines = []
+    # X axis displays number of files read
+    unique_files = []
     for measure in timeMeasures:
-        if measure[0] not in uniqueLines:
-            uniqueLines.append(measure[0])
-    # check to see if uniqueLines populated correctly
-    # print("uniqueLines ", len(uniqueLines), uniqueLines)
+        if measure[0] not in unique_files:
+            unique_files.append(measure[0])
+    # check to see if unique_files populated correctly
+    # print("unique_files ", len(unique_files), unique_files)
 
     # find how big the timeMeasurements would be if it had no gaps
-    totalEntries = (len(uniqueLines) * maxPartitions) - 1
+    totalEntries = (len(unique_files) * maxPartitions) - 1
     lastItem = len(timeMeasures) - 1
 
     for item in range(totalEntries):
         # prevent going beyond the end of array
         if item == lastItem -1:
             timeMeasures.append([timeMeasures[item][0],timeMeasures[item][1]+1, None, None])
-        # if the number of lines read changes
+        # if the number of files read changes
         # BUT the number of partitions isn't the same as the peak,
         # then there is a gap that needs to be padded
         elif (timeMeasures[item][0] != timeMeasures[item+1][0]) and timeMeasures[item][1] < maxPartitions:
@@ -205,9 +233,9 @@ def separateAxes(timeMeasures, maxPartitions):
     # go through timeMeasures by index
     # create number of y measurements equal to numPartitions
 
-    # X axis displays number of lines read
+    # X-axis displays number of lines read
     xAxis = []
-    # Y axis displays time, but must have multiple arrays, DF creation and AVG operation
+    # Y-axis displays time, but must have multiple arrays, DF creation and AVG operation
     yDF = []
     yAVG = []
 
@@ -265,7 +293,7 @@ def graphData(xAxis, yDF, yAVG, timestamp):
     for index in range(dataSlices):
         plt.plot(xAxis, yDF[index+1], c=colors[index], marker="o", label=(index+1, 'partitions'))
 
-    plt.xlabel('Lines Read')
+    plt.xlabel('Files Read')
     plt.ylabel('Time (seconds)')
     plt.title("time to create dataframe, repartition()")
     plt.legend(bbox_to_anchor=(1.0, 1.0))
@@ -279,7 +307,7 @@ def graphData(xAxis, yDF, yAVG, timestamp):
         plt.plot(xAxis, yAVG[index+1], c=colors[index],  marker="o", label=(index+1, 'partitions'))
         #print(index, " ", colors[index])
 
-    plt.xlabel('Lines Read')
+    plt.xlabel('Files Read')
     plt.ylabel('Time (seconds)')
     plt.title("time to average dataframe, repartition()")
     plt.legend(bbox_to_anchor=(1.0, 1.0))
@@ -289,11 +317,10 @@ def graphData(xAxis, yDF, yAVG, timestamp):
 def main():
     # extract filenames from list of database URLs
     files_to_read = getCSVfilenames()
-    # read CSVs into a list, headers stored in [0] and body stored in [1]
-    stored_data = fromCSVtoList(files_to_read)
+    # read CSVs into a list
     # perform Spark-related actions on the stored data,
     # list of measurements stored in [0] and highest num. of partitions used in [1]
-    time_measurements = sparkDFandAVG(stored_data[0], stored_data[1])
+    time_measurements = sparkDFandAVG(files_to_read)
     # output raw data to output file, timestamp is used elsewhere
     timestamp = outputToFile(time_measurements[0])
     # proofread, fill gaps in data with None for graphing purposes
