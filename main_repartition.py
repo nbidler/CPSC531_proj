@@ -31,50 +31,14 @@ def getCSVfilenames():
             databaseFilenames.append(dataName + '.csv')
 
     print(databaseFilenames)
+    # you can have as many or few files as you want to read for raw data,
+    # but know that 12 is the minimum required for the data prep needed for graph outputs
+    #return databaseFilenames[0:12]
     return databaseFilenames
 
 # step #2 - import csv module we created earlier
 # put headers separately into one list and data in another list
 # source: https://www.geeksforgeeks.org/python-read-csv-column-into-list-without-header/
-
-
-# def fromCSVtoList(databaseFilenames):
-#     # the too-large array to hold all data
-#     # store all ocean algae data into a list here
-#     data = []
-#
-#     for filename in databaseFilenames:
-#         # debug line for timing reading input file
-#         print("read data from file start")
-#         startTime = time.monotonic()
-#
-#         with open(filename, newline='') as file:
-#             reader = csv.reader(file, delimiter=',')
-#
-#             # store column names into a list here
-#             columns = next(reader)
-#
-#             # store data from file into list, which pySpark can read
-#             data =
-#             # for row in reader:
-#             #     data.append(row[:])
-#
-#         # end of reading input file
-#         endTime = time.monotonic()
-#
-#         print("read ", len(data), " lines of data from file, in ", (endTime - startTime), " s")
-#
-#         # for purposes of testing, keep the "maximum" size small
-#         if len(data) > 10000:
-#             break
-#
-#     # if not printing whole contents of array "data" use this line to show output.csv has finished being read
-#     #print("finished reading .csv files")
-#
-#     # make note of number of rows in array "data": rows = # of measurements -1 (for headers
-#     #print("The number of entries in data is ", len(data))
-#     #return [columns, data]
-
 
 def sparkDFandAVG(databaseFilenames):
     # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
@@ -94,32 +58,6 @@ def sparkDFandAVG(databaseFilenames):
 
     # Step #4 - create and act on the dataframe repeatedly,
     #   each time using a larger portion of the dataset up to the dataset's actual size
-
-    #data = spark.read.options(header=True).csv(databaseFilenames)
-
-    # for filename in databaseFilenames:
-    #     # debug line for timing reading input file
-    #     print("read data from file start")
-    #     startTime = time.monotonic()
-    #
-    #     newData = spark.read.csv(filename)
-    #     data = data.union(newData)
-    #
-    #     # end of reading input file
-    #     endTime = time.monotonic()
-    #
-    #     print("read ", len(data), " files of data, in ", (endTime - startTime), " s")
-    #
-    #     # for purposes of testing, keep the "maximum" size small
-    #     if len(data) > 10000:
-    #         break
-
-    # if not printing whole contents of array "data" use this line to show output.csv has finished being read
-    #print("finished reading .csv files")
-
-    # make note of number of rows in array "data": rows = # of measurements -1 (for headers
-    #print("The number of entries in data is ", len(data))
-    #return [columns, data]
 
     # hard-coding for output sorting reasons, can automate if more data points needed
     fractions = ([1, 5], [1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1])
@@ -205,6 +143,9 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # check to see if unique_files populated correctly
     # print("unique_files ", len(unique_files), unique_files)
 
+    for measure in timeMeasures:
+        print(measure)
+
     # find how big the timeMeasurements would be if it had no gaps
     totalEntries = (len(unique_files) * maxPartitions) - 1
     lastItem = len(timeMeasures) - 1
@@ -223,9 +164,9 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # it always overshoots by one
     timeMeasures.pop()
     # our data should have same dimensions and gaps filled by None
-    # for measure in timeMeasures:
+    for measure in timeMeasures:
         # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-        # print(measure)
+        print(measure)
     return timeMeasures
 
 
