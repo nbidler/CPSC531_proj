@@ -143,8 +143,8 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # check to see if unique_files populated correctly
     # print("unique_files ", len(unique_files), unique_files)
 
-    for measure in timeMeasures:
-        print(measure)
+    # for measure in timeMeasures:
+    #     print(measure)
 
     # find how big the timeMeasurements would be if it had no gaps
     totalEntries = (len(unique_files) * maxPartitions) - 1
@@ -164,9 +164,9 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # it always overshoots by one
     timeMeasures.pop()
     # our data should have same dimensions and gaps filled by None
-    for measure in timeMeasures:
+    # for measure in timeMeasures:
         # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-        print(measure)
+        # print(measure)
     return timeMeasures
 
 
