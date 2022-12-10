@@ -247,15 +247,15 @@ from matplotlib.pyplot import cm
 colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
 plt.figure(num=1, figsize=[10, 8])
 dataSlices = len(yDF) -1
-print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
+# print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " colors ", len(colors))
 
 # plot 1 line per amt of partitions used
-for index in range(len(xAxis)):
+for index in range(dataSlices):
     plt.plot(xAxis, yDF[index+1], c=colors[index], marker="o", label=(index+1, 'partitions'))
 
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
-plt.title("time to create dataframe")
+plt.title("time to create dataframe, coalesce()")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("coalesce_DFgraph_" + timestamp + ".png", bbox_inches='tight')
 # dataframe graph saved
@@ -269,7 +269,7 @@ for index in range(dataSlices):
 
 plt.xlabel('Lines Read')
 plt.ylabel('Time (seconds)')
-plt.title("time to average dataframe")
+plt.title("time to average dataframe, coalesce()")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("coalesce_AVGgraph_" + timestamp + ".png", bbox_inches='tight')
 # averaging time graph saved
