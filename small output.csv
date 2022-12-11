@@ -1,5 +1,0 @@
-time,temperature,conductivity,pressure,salinity,chlorophyll_raw,chlorophyll,temperature_flagPrimary,temperature_flagSecondary,conductivity_flagPrimary,conductivity_flagSecondary,pressure_flagPrimary,pressure_flagSecondary,salinity_flagPrimary,salinity_flagSecondary,chlorophyll_flagPrimary,chlorophyll_flagSecondary,sigmat,diagnosticVoltage,currentDraw,aux1,aux3,aux4,instrument1,instrument2,platform1,station,lat,lon,depth,crs
-1/1/2007 0:00,15.7525,4.16741,1.533,33.2247,9.97E+36,0.005,1,0,1,0,1,0,1,0,4,1,24.438,12.8,128,0.0002,0.0023,4.6294,b'',b'',b'',b'Newport Pier',33.6061,-117.9311,2,9.97E+36
-1/1/2007 0:01,15.7481,4.16691,1.594,33.2239,9.97E+36,0.005,1,0,1,0,1,0,1,0,4,1,24.4384,12.8,116.2,0.0002,0.0131,4.6169,b'',b'',b'',b'Newport Pier',33.6061,-117.9311,2,9.97E+36
-1/1/2007 0:02,15.7354,4.16566,1.535,33.2235,9.97E+36,0.006,1,0,1,0,1,0,1,0,4,1,24.4409,12.8,107,0.0002,0.0029,4.5998,b'',b'',b'',b'Newport Pier',33.6061,-117.9311,2,9.97E+36
-1/1/2007 0:03,15.734,4.16549,1.586,33.2231,9.97E+36,0.005,1,0,1,0,1,0,1,0,4,1,24.4409,12.8,106.2,0.0002,0.0012,4.5911,b'',b'',b'',b'Newport Pier',33.6061,-117.9311,2,9.97E+36
