@@ -4,6 +4,8 @@ holding area for CPSC 531 big data semester project
 changelog:
 11/25 - added .py file that imported nc data to csv, then imported the data into a data list and header list, then created spark session to calculate avg
 
+12/10 - finalized GitHub repo organization and presentation
+
 12/11 - post-submission update, ouch
 <br>  on python 3.7 and installing dependency libraries, run "python openDAP-to-CSV.py" to download raw data from remote storage to local storage
 <br>  run main_repartition.py or main_coalesce.py to benchmark pySpark performance against different data sizes and with different amounts of partitions
