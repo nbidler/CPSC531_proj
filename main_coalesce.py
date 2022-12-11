@@ -11,15 +11,8 @@ from matplotlib.pyplot import cm
 findspark.init()
 
 # step #1 - output the nc file to csv
-# for now, just testing with a singular beach in 2007, we may want to experiment with combining multiple nc's, etc
+# see openDAP-to-CSV.py about the creation of local CSV files
 # source: https://stackoverflow.com/questions/44359869/convert-netcdf-file-to-csv-or-text-using-python
-# uncomment the below lines as necessary, otherwise use test files (output.csv and small output.csv)
-'''
-import xarray as xr
-
-nc = xr.open_dataset('https://sccoos.org/thredds/dodsC/autoss/newport_pier-2007.nc')
-nc.precip.to_dataframe().to_csv('output.csv')
-'''
 
 
 # open the list of databases and extract the list of locally stored CSV files
@@ -33,33 +26,26 @@ def getCSVfilenames():
     print(databaseFilenames)
     # you can have as many or few files as you want to read for raw data,
     # but know that 12 is the minimum required for the data prep needed for graph outputs
-    #return databaseFilenames[0:12]
-    return databaseFilenames
+    return databaseFilenames[0:12]
+    # return databaseFilenames
 
-# step #2 - import csv module we created earlier
-# put headers separately into one list and data in another list
-# source: https://www.geeksforgeeks.org/python-read-csv-column-into-list-without-header/
 
 def sparkDFandAVG(databaseFilenames):
-    # step #2.1 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
+    # step #2 - follow the steps in this guide to install hadoop (and the correct version of Java) on your machine
     # source: https://medium.com/analytics-vidhya/hadoop-how-to-install-in-5-steps-in-windows-10-61b0e67342f8
-    # step #2.2 - follow the steps in this guide to install pySpark on your machine
+    # step #2.1 - follow the steps in this guide to install pySpark on your machine
     # source: https://gongster.medium.com/how-to-use-pyspark-in-pycharm-ide-2fd8997b1cdd
-    # step # 2.9 - use time measurement capability per https://docs.python.org/3/library/time.html
+    # step # 2.2 - use time measurement capability per https://docs.python.org/3/library/time.html
     # step #3 - start a spark session from pyspark.sql module
     # source: https://www.geeksforgeeks.org/find-minimum-maximum-and-average-value-of-pyspark-dataframe-column/
 
     # create spark session using the 'oceanspark' name
-    #print("create spark session")
-    #startTime = time.monotonic()
     spark = SparkSession.builder.appName('oceanspark').getOrCreate()
-    #endTime = time.monotonic()
-    #print("spark session made, in ", (endTime - startTime), " s")
 
     # Step #4 - create and act on the dataframe repeatedly,
     #   each time using a larger portion of the dataset up to the dataset's actual size
 
-    # hard-coding for output sorting reasons, can automate if more data points needed
+    # list of fractions to determine file increments to be read into total dataset
     fractions = ([1, 5], [1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5], [1, 1])
 
     # create storage list n-tuples
@@ -72,16 +58,14 @@ def sparkDFandAVG(databaseFilenames):
     for number in fractions:
         print("this dataframe contains ", number[0], "/", number[1], " of the total data")
         # create a max number of rows to read
-        partial_list = databaseFilenames[0:round(entries * (number[0] / number[1]))]
         maxFiles = round(entries * (number[0] / number[1]))
+        partial_list = databaseFilenames[0:maxFiles]
         print("files to read: ", maxFiles)
-        # creating a dataframe from the data we grabbed from the csvs in step #2
-        #print("create dataframe")
+        # creating a dataframe from the data we grabbed from the CSVs in step #2
         startTime = time.monotonic()
         dataframe = spark.read.options(header=True).csv(partial_list)
         endTime = time.monotonic()
         wholeDFtime = endTime - startTime
-        #print("whole dataframe created, in ", wholeDFtime, " s")
         numPartitions = dataframe.rdd.getNumPartitions()
         # record the largest/longest number of partitions
         if numPartitions > maxPartitions:
@@ -97,28 +81,16 @@ def sparkDFandAVG(databaseFilenames):
             # over-write dataframe with itself, limited to activePartitions number of partitions
             reducedDF = dataframe.coalesce(activePartitions)
             print("this dataframe contains ", activePartitions, " active Partitions")
-            #print("dataframe with reduced partitions created in ", wholeDFtime, " s")
             # TEST: find average of temperature column
-            #print("average dataframe with ", activePartitions, " partitions")
             startTime = time.monotonic_ns()
-            reducedDF.agg({'temperature':'avg', 'conductivity':'avg', 'salinity':'avg', 'chlorophyll':'avg'}).collect()#.show()
-            #reducedDF.agg('temperature', 'conductivity', 'salinity', 'chlorophyll')
+            reducedDF.agg({'temperature':'avg', 'conductivity':'avg', 'salinity':'avg', 'chlorophyll':'avg'}).collect()
             endTime = time.monotonic_ns()
             avgDFtime = endTime - startTime
-            #print("dataframe avg complete, in ", avgDFtime, " s")
             # store DF size, num partitions, time taken for wholeDF, reducedDF, avg
             timeMeasures.append([maxFiles, activePartitions, wholeDFtime, avgDFtime])
 
-        # for local machine testing with small datasets
-        # if number[1] == 2: #maxRows > 10000:
-        #     break
-
     # we now have all the time data in one place
     return [timeMeasures, maxPartitions]
-    # for measure in timeMeasures:
-        # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-        # print(measure)
-    # save this raw data to an output file
 
 
 def outputToFile(timeMeasures):
@@ -128,23 +100,15 @@ def outputToFile(timeMeasures):
     return timestamp
 
 def prepListForGraphing(timeMeasures, maxPartitions):
-    # print("preparing data for graphing")
     # with all raw data saved, prepare data for graphing by filling gaps with None
     # matplotlib can skip over None data safely but can't handle different X and Y sizes
 
     # determine how many unique numbers of files were read
     # Can't just use fractions because it might have terminated early
-
-    # X axis displays number of files read
     unique_files = []
     for measure in timeMeasures:
         if measure[0] not in unique_files:
             unique_files.append(measure[0])
-    # check to see if unique_files populated correctly
-    # print("unique_files ", len(unique_files), unique_files)
-
-    for measure in timeMeasures:
-        print(measure)
 
     # find how big the timeMeasurements would be if it had no gaps
     totalEntries = (len(unique_files) * maxPartitions) - 1
@@ -164,9 +128,6 @@ def prepListForGraphing(timeMeasures, maxPartitions):
     # it always overshoots by one
     timeMeasures.pop()
     # our data should have same dimensions and gaps filled by None
-    for measure in timeMeasures:
-        # print("for rows read ", measure[0], " and ", measure[1], " partitions:  time to create dataframe: ", measure[2], " time to avg slice of DF: ", measure[3])
-        print(measure)
     return timeMeasures
 
 
@@ -185,39 +146,20 @@ def separateAxes(timeMeasures, maxPartitions):
         yDF.append([])
         yAVG.append([])
 
-    # check to see if prepared for population correctly
-    # print("yDF ", len(yDF), yDF)
-    # print("yAVG ", len(yAVG), yAVG)
-
     curPos = 0
     endPos = len(timeMeasures)
     for curPos in range(endPos):
-        #print(type(timeMeasures[curPos][0]), " ", timeMeasures[curPos][0])
-        #print("rows read: ", timeMeasures[curPos][0], " partitions : ", timeMeasures[curPos][1], " creating wholeDF: ", timeMeasures[curPos][2], " time to avg reduced DF: ", timeMeasures[curPos][3])
         # keep track of what amt of partition was being used
         parts = (curPos+1) % maxPartitions
         if parts == 0:
             parts = maxPartitions
-        # print("curPos ", curPos, " partitions ", parts)
         # only measure the xAxis every time it changes
         if parts == 1:
-            #print(timeMeasures[curPos])
             xAxis.append(timeMeasures[curPos][0])
         yDF[parts].append(timeMeasures[curPos][2])
-        #print(timeMeasures[curPos])
         yAVG[parts].append(timeMeasures[curPos][3])
-        #print(timeMeasures[curPos])
 
     return [xAxis, yDF, yAVG]
-
-# check that transfer from timeMeasures to multiple different arrays worked
-# print("xAxis ", xAxis)
-# print("yDF ", len(yDF))
-# for entry in yDF:
-#     print(entry)
-# print("yAVG ", len(yAVG))
-# for entry in yAVG:
-#     print(entry)
 
 
 def graphData(xAxis, yDF, yAVG, timestamp):
@@ -228,7 +170,6 @@ def graphData(xAxis, yDF, yAVG, timestamp):
     colors = cm.rainbow(np.linspace(0, 1, len(yDF)))
     plt.figure(num=1, figsize=[10, 8])
     dataSlices = len(yDF) -1
-    # print("xAxis ", len(xAxis), " yDF ", len(yDF), " yAVG ", len(yAVG), " yAVG[0] ", len(yAVG[1]), len(yAVG[2]), " colors ", len(colors))
 
     # plot 1 line per amt of partitions used
     for index in range(dataSlices):
@@ -246,7 +187,6 @@ def graphData(xAxis, yDF, yAVG, timestamp):
     # plot 1 line per amt of partitions used
     for index in range(dataSlices):
         plt.plot(xAxis, yAVG[index+1], c=colors[index],  marker="o", label=(index+1, 'partitions'))
-        #print(index, " ", colors[index])
 
     plt.xlabel('Files Read')
     plt.ylabel('Time (seconds)')
@@ -257,19 +197,25 @@ def graphData(xAxis, yDF, yAVG, timestamp):
 
 def main():
     # extract filenames from list of database URLs
-    files_to_read = getCSVfilenames()
     # read CSVs into a list
+    files_to_read = getCSVfilenames()
+
     # perform Spark-related actions on the stored data,
     # list of measurements stored in [0] and highest num. of partitions used in [1]
     time_measurements = sparkDFandAVG(files_to_read)
-    # output raw data to output file, timestamp is used elsewhere
+
+    # output raw data to output file, timestamp in time_measurements[1] is used elsewhere
     timestamp = outputToFile(time_measurements[0])
+
     # proofread, fill gaps in data with None for graphing purposes
-    gap_filled_measurements = prepListForGraphing(time_measurements[0], time_measurements[1])
-    # list of measurements should now have all gaps filled by None,
     # the graphing application can't handle odd lengths but can handle None entries
+    gap_filled_measurements = prepListForGraphing(time_measurements[0], time_measurements[1])
+
+    # list of measurements should now have all gaps filled by None,
+    # split into separate lists for use as axes
     axes_x_and_2_ys = separateAxes(gap_filled_measurements, time_measurements[1])
-    # x-axis stored in [0], y for dataframe creation at [1], y for time to finish averaging [2]
+
+    # x-axis stored in axes_x_and_2_ys[0], y for dataframe creation at [1], y for time to finish averaging [2]
     # pass separated axes and timestamp to be graphed
     graphData(axes_x_and_2_ys[0], axes_x_and_2_ys[1], axes_x_and_2_ys[2], timestamp)
 
